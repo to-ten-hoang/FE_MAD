@@ -1,15 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, Image, TouchableOpacity, ScrollView
+  View, Text, StyleSheet, Image, TouchableOpacity, ScrollView,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import LogoutModal from './LogoutModal';
+import { getUserId } from '../../utils/storage';
+import { getUserProfile } from '../../api/authApi';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const [showLogout, setShowLogout] = useState(false);
+  const [userName, setUserName] = useState(''); // State để lưu tên người dùng
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const userId = await getUserId();
+        if (userId) {
+          const userProfile = await getUserProfile(userId);
+          setUserName(userProfile.fullName || ''); // Lấy fullName từ API
+        } else {
+          // Nếu không có userId, có thể điều hướng về Login
+          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+    fetchUserProfile();
+  }, [navigation]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -17,7 +39,7 @@ const ProfileScreen = () => {
         {/* Header Cover */}
         <View style={styles.headerCover}>
           <Image source={require('../../assets/images/avatar.jpg')} style={styles.avatar} />
-          <Text style={styles.name}>Orlando Diggs</Text>
+          <Text style={styles.name}>{userName || <ActivityIndicator size="small" color="#fff" />}</Text>
           <Text style={styles.location}>California, USA</Text>
 
           <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile')}>
